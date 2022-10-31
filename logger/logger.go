@@ -16,7 +16,7 @@ type Logger struct {
 	name string
 }
 
-func Init(log_filename string) {
+func Init(log_filename string, log_level_env_name string) {
 	// create logger
 	fileLogger := &lumberjack.Logger{
 		Filename:   log_filename,
@@ -27,7 +27,7 @@ func Init(log_filename string) {
 	}
 
 	loglevel := zerolog.InfoLevel
-	env_LOG_LEVEL := strings.ToLower(os.Getenv("LOG_LEVEL"))
+	env_LOG_LEVEL := strings.ToLower(os.Getenv(log_level_env_name))
 	switch env_LOG_LEVEL {
 	case "info":
 		loglevel = zerolog.InfoLevel
