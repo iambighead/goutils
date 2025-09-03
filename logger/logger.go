@@ -56,8 +56,7 @@ func (l *Logger) Errorf(format string, v ...interface{}) {
 }
 
 // func initLogger(mconfig *config.MasterConfig) *Logger {
-func InitLogger(
-	loggerName string,
+func InitLoggerFactory(
 	logLevel string,
 	logOutputFolder string,
 	logRotationBySize bool,
@@ -68,49 +67,52 @@ func InitLogger(
 	enableSyslog bool,
 	syslogHost string,
 	syslogPort int,
-	syslogProtocol string) *Logger {
+	syslogProtocol string) func(logname string) *Logger {
 	var myLogger Logger
 
-	loglevellc := strings.ToLower(logLevel)
-	switch loglevellc {
-	case "debug":
-		myLogger.loglevel = LogLevelDebug
-	case "info":
-		myLogger.loglevel = LogLevelInfo
-	case "error":
-		myLogger.loglevel = LogLevelError
-	default:
-		myLogger.loglevel = LogLevelInfo
-	}
+	return func(loggerName string) *Logger {
 
-	// Initialize the logger
-	var locallogger_destroy func()
-	var syslogger_destroy func()
-
-	// Rotate every hour if logRotationBySize is false
-	logRotationInterval := time.Duration(logRotationIntervalHour) * time.Hour
-	myLogger.logger, locallogger_destroy = createCustomFileLogger(
-		loggerName, logOutputFolder, logRotationBySize, logMaxFileSize,
-		logMaxFiles, logRotationInterval, enableConsoleLog)
-
-	if enableSyslog {
-		myLogger.syslogger, syslogger_destroy = createSysLogger(
-			loggerName,
-			syslogHost,
-			syslogPort,
-			syslogProtocol)
-	}
-
-	myLogger.Destroy = func() {
-		if locallogger_destroy != nil {
-			locallogger_destroy()
+		loglevellc := strings.ToLower(logLevel)
+		switch loglevellc {
+		case "debug":
+			myLogger.loglevel = LogLevelDebug
+		case "info":
+			myLogger.loglevel = LogLevelInfo
+		case "error":
+			myLogger.loglevel = LogLevelError
+		default:
+			myLogger.loglevel = LogLevelInfo
 		}
-		if syslogger_destroy != nil {
-			syslogger_destroy()
-		}
-	}
 
-	return &myLogger
+		// Initialize the logger
+		var locallogger_destroy func()
+		var syslogger_destroy func()
+
+		// Rotate every hour if logRotationBySize is false
+		logRotationInterval := time.Duration(logRotationIntervalHour) * time.Hour
+		myLogger.logger, locallogger_destroy = createCustomFileLogger(
+			loggerName, logOutputFolder, logRotationBySize, logMaxFileSize,
+			logMaxFiles, logRotationInterval, enableConsoleLog)
+
+		if enableSyslog {
+			myLogger.syslogger, syslogger_destroy = createSysLogger(
+				loggerName,
+				syslogHost,
+				syslogPort,
+				syslogProtocol)
+		}
+
+		myLogger.Destroy = func() {
+			if locallogger_destroy != nil {
+				locallogger_destroy()
+			}
+			if syslogger_destroy != nil {
+				syslogger_destroy()
+			}
+		}
+
+		return &myLogger
+	}
 }
 
 func createSysLogger(loggerName string, host string, port int, protocol string) (*srslog.Writer, func()) {
