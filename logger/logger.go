@@ -331,7 +331,11 @@ func createCustomFileLogger(
 		}
 	}
 	// Create and return the logger
-	return log.New(multiWriter, loggerName+": ", log.LstdFlags|log.Lshortfile), destroyFunc
+	logger := log.New(multiWriter, loggerName+": ", log.LstdFlags|log.Lshortfile)
+	currentFlags := logger.Flags()                               // Get the current flags
+	newFlags := currentFlags &^ (log.Lshortfile | log.Llongfile) // Remove the Lshortfile and Llongfile flags
+	logger.SetFlags(newFlags)                                    // Set the modified flags
+	return logger, destroyFunc
 }
 
 func cleanupLogFiles(logOutputFolder string, maxLogFiles int) {
